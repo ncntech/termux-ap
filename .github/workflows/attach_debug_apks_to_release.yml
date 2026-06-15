@@ -1,13 +1,22 @@
 name: Attach Debug APKs To Release
 
+# DISABLED from automatic release triggers.
+# debug_build.yml handles building and releasing APKs to GitHub Releases
+# directly on every push to master. This legacy workflow used the deprecated
+# `hub` CLI and conflicted with the NasTech release process by triggering on
+# every release event and deleting releases that don't match strict semver.
+# It is kept here as manual workflow_dispatch only for legacy semver releases.
 on:
-  release:
-    types:
-      - published
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Strict semver release tag (e.g. 0.118.0) — NOT for NasTech builds'
+        required: true
 
 jobs:
   attach-apks:
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     strategy:
       fail-fast: false
       matrix:
@@ -18,8 +27,6 @@ jobs:
     steps:
       - name: Clone repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ env.GITHUB_REF }}
 
       - name: Build and attach APKs to release
         shell: bash {0}
@@ -35,9 +42,9 @@ jobs:
           }
 
           echo "Setting vars"
-          RELEASE_VERSION_NAME="${GITHUB_REF/refs\/tags\//}"
+          RELEASE_VERSION_NAME="${{ github.event.inputs.release_tag }}"
           if ! printf "%s" "${RELEASE_VERSION_NAME/v/}" | grep -qP '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$'; then
-           exit_on_error "The versionName '${RELEASE_VERSION_NAME/v/}' is not a valid version as per semantic version '2.0.0' spec in the format 'major.minor.patch(-prerelease)(+buildmetadata)'. https://semver.org/spec/v2.0.0.html."
+           exit_on_error "The versionName '${RELEASE_VERSION_NAME/v/}' is not a valid semver version."
           fi
 
           APK_DIR_PATH="./app/build/outputs/apk/debug"
@@ -45,8 +52,8 @@ jobs:
           APK_BASENAME_PREFIX="termux-app_$APK_VERSION_TAG"
 
           echo "Building APKs for 'APK_VERSION_TAG' release"
-          export TERMUX_APK_VERSION_TAG="$APK_VERSION_TAG" # Used by app/build.gradle
-          export TERMUX_PACKAGE_VARIANT="${{ env.PACKAGE_VARIANT }}" # Used by app/build.gradle
+          export TERMUX_APK_VERSION_TAG="$APK_VERSION_TAG"
+          export TERMUX_PACKAGE_VARIANT="${{ env.PACKAGE_VARIANT }}"
           if ! ./gradlew assembleDebug; then
             exit_on_error "Build failed for '$APK_VERSION_TAG' release."
           fi
@@ -59,7 +66,7 @@ jobs:
             fi
           done
 
-          echo "Generating sha25sums file"
+          echo "Generating sha256sums file"
           if ! (cd "$APK_DIR_PATH"; sha256sum \
             "${APK_BASENAME_PREFIX}_universal.apk" \
             "${APK_BASENAME_PREFIX}_arm64-v8a.apk" \
@@ -67,7 +74,7 @@ jobs:
             "${APK_BASENAME_PREFIX}_x86_64.apk" \
             "${APK_BASENAME_PREFIX}_x86.apk" \
             > "${APK_BASENAME_PREFIX}_sha256sums"); then
-            exit_on_error "Generate sha25sums failed for '$APK_VERSION_TAG' release."
+            exit_on_error "Generate sha256sums failed for '$APK_VERSION_TAG' release."
           fi
 
           echo "Attaching APKs to github release"
