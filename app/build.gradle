@@ -38,6 +38,16 @@ android {
 
         implementation project(":terminal-view")
         implementation project(":termux-shared")
+
+        // NasTech AI — Biometric lock (fingerprint + face)
+        implementation "androidx.biometric:biometric:1.1.0"
+        // NasTech AI — Encrypted preferences for passcode / passkey storage
+        implementation "androidx.security:security-crypto:1.1.0-alpha06"
+        // NasTech AI — PDF rendering (FilePreview)
+        implementation "androidx.webkit:webkit:1.8.0"
+        // NasTech AI — Credential Manager for passkey
+        implementation "androidx.credentials:credentials:1.2.2"
+        implementation "androidx.credentials:credentials-play-services-auth:1.2.2"
     }
 
     defaultConfig {
@@ -52,7 +62,7 @@ android {
         buildConfigField "String", "TERMUX_PACKAGE_VARIANT", "\"" + project.ext.packageVariant + "\"" // Used by TermuxApplication class
 
         manifestPlaceholders.TERMUX_PACKAGE_NAME = "com.termux"
-        manifestPlaceholders.TERMUX_APP_NAME = "Termux"
+        manifestPlaceholders.TERMUX_APP_NAME = "NasTech AI Terminal"
         manifestPlaceholders.TERMUX_API_APP_NAME = "Termux:API"
         manifestPlaceholders.TERMUX_BOOT_APP_NAME = "Termux:Boot"
         manifestPlaceholders.TERMUX_FLOAT_APP_NAME = "Termux:Float"
