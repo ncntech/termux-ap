@@ -48,36 +48,46 @@ public class NasTechManager {
     }
 
     private static void writeNasTechInit(File dir, String apiKey) {
+        String nasTechHome = dir.getAbsolutePath();
+
+        // Fixed: use bash function syntax instead of alias for '$' (alias doesn't work for special chars)
+        // Also expose 'nastech', 'ai', and 'speak' as direct commands — no prefix needed
         String rcContent =
-            "# NasTech AI Terminal System — Auto-generated\n" +
-            "export NASTECH_HOME=\"" + dir.getAbsolutePath() + "\"\n" +
+            "# NasTech AI Terminal System v6 — Auto-generated\n" +
+            "export NASTECH_HOME=\"" + nasTechHome + "\"\n" +
             "export NASTECH_MODEL=\"openai/gpt-4o\"\n" +
             "export NASTECH_VERSION=\"v6\"\n" +
             "export OPENROUTER_API_KEY=\"" + apiKey + "\"\n\n" +
-            "# $ command prefix\n" +
+            "# Core command dispatcher\n" +
             "nastech_cmd() {\n" +
             "  local cmd=\"$1\"; shift\n" +
             "  case \"$cmd\" in\n" +
-            "    ai)      python3 \"$NASTECH_HOME/nastech_ai.py\" \"$@\" ;;\n" +
-            "    ubuntu)  bash \"$NASTECH_HOME/ubuntu_layer.sh\" \"$@\" ;;\n" +
-            "    install) bash \"$NASTECH_HOME/nastech_engine_v6.sh\" \"$@\" ;;\n" +
-            "    system)  python3 \"$NASTECH_HOME/nastech_audit.py\" \"$@\" ;;\n" +
-            "    git)     bash \"$NASTECH_HOME/nastech_git.sh\" \"$@\" ;;\n" +
-            "    speak)   bash \"$NASTECH_HOME/nastech_speak.sh\" \"$@\" ;;\n" +
-            "    help)    echo -e \"\\033[1;36mNasTech v6 Commands:\\033[0m\"\n" +
-            "             echo \"  $ ai [prompt]    — Stream AI response\"\n" +
-            "             echo \"  $ ubuntu         — Enter Ubuntu proot\"\n" +
-            "             echo \"  $ install [pkg]  — NasTech v6 installer\"\n" +
-            "             echo \"  $ system         — System audit\"\n" +
-            "             echo \"  $ git [cmd]      — Git operations\"\n" +
-            "             echo \"  $ speak [text]   — Piper TTS (offline voice)\"\n" +
-            "             ;;\n" +
-            "    *)       echo \"Unknown NasTech command: $cmd. Try: $ help\" ;;\n" +
+            "    ai)       python3 \"$NASTECH_HOME/nastech_ai.py\" \"$@\" ;;\n" +
+            "    speak)    bash \"$NASTECH_HOME/nastech_speak.sh\" \"$@\" ;;\n" +
+            "    ubuntu)   bash \"$NASTECH_HOME/ubuntu_layer.sh\" \"$@\" ;;\n" +
+            "    install)  bash \"$NASTECH_HOME/nastech_engine_v6.sh\" \"$@\" ;;\n" +
+            "    system)   python3 \"$NASTECH_HOME/nastech_audit.py\" \"$@\" ;;\n" +
+            "    git)      bash \"$NASTECH_HOME/nastech_git.sh\" \"$@\" ;;\n" +
+            "    help)\n" +
+            "      echo -e \"\\033[1;36m\\u29e1 NasTech AI Terminal v6\\033[0m\"\n" +
+            "      echo -e \"\\033[0;90m  Usage: ai [prompt]  or  nastech [cmd]\\033[0m\"\n" +
+            "      echo \"\"\n" +
+            "      echo \"  ai [prompt]    Stream AI (OpenRouter)\"\n" +
+            "      echo \"  speak [text]   Piper TTS offline voice\"\n" +
+            "      echo \"  ubuntu         Ubuntu proot shell\"\n" +
+            "      echo \"  install [pkg]  NasTech v6 installer\"\n" +
+            "      echo \"  system         System audit\"\n" +
+            "      echo \"  git [cmd]      Git operations\"\n" +
+            "      ;;\n" +
+            "    *) echo \"Unknown command: $cmd — try: nastech help\" ;;\n" +
             "  esac\n" +
-            "}\n" +
-            "alias \\$='nastech_cmd'\n\n" +
-            "# Source NasTech on terminal open\n" +
-            "echo -e \"\\033[1;36m⬡ NasTech AI Terminal v6 — ready. Type: $ help\\033[0m\"\n";
+            "}\n\n" +
+            "# Direct commands — type: ai hello world\n" +
+            "nastech() { nastech_cmd \"$@\"; }\n" +
+            "ai()      { nastech_cmd ai \"$@\"; }\n" +
+            "speak()   { nastech_cmd speak \"$@\"; }\n\n" +
+            "echo -e \"\\033[1;36m\\u29e1 NasTech AI Terminal v6 — ready\\033[0m\"\n" +
+            "echo -e \"\\033[0;90m  ai [prompt]   speak [text]   nastech help\\033[0m\"\n";
 
         // Write scripts alongside the init script
         writeSpeakScript(dir);
@@ -88,24 +98,40 @@ public class NasTechManager {
             try (FileOutputStream fos = new FileOutputStream(rcFile)) {
                 fos.write(rcContent.getBytes());
             }
-            // Append source line to bashrc if not already there
-            File bashrc = new File(System.getenv("HOME") != null
-                ? System.getenv("HOME") + "/.bashrc"
-                : sAppContext.getFilesDir() + "/.bashrc");
-            String sourceLine = "\n# NasTech AI\n[ -f \"$NASTECH_HOME/nastech_init.sh\" ] && source \"$NASTECH_HOME/nastech_init.sh\"\n";
-            if (bashrc.exists()) {
-                String existing = new String(readFile(bashrc));
-                if (!existing.contains("nastech_init.sh")) {
-                    try (FileOutputStream fos = new FileOutputStream(bashrc, true)) {
-                        fos.write(sourceLine.getBytes());
-                    }
-                }
-            } else {
-                try (FileOutputStream fos = new FileOutputStream(bashrc)) {
-                    fos.write(sourceLine.getBytes());
-                }
-            }
+
+            // Fixed: hardcode NASTECH_HOME in source line (var not set yet when rc is read)
+            // Fixed: write to BOTH .bash_profile AND .bashrc
+            //   Termux opens LOGIN shells → sources .bash_profile (not .bashrc)
+            //   .bashrc is for non-login interactive shells
+            String sourceLine =
+                "\n# NasTech AI Terminal\n" +
+                "export NASTECH_HOME=\"" + nasTechHome + "\"\n" +
+                ". \"" + nasTechHome + "/nastech_init.sh\"\n";
+
+            String homeDir = System.getenv("HOME") != null
+                ? System.getenv("HOME")
+                : sAppContext.getFilesDir().getParent();
+
+            // Write to .bash_profile (Termux default — login shell)
+            appendIfMissing(new File(homeDir, ".bash_profile"), sourceLine, "nastech_init.sh");
+            // Write to .bashrc (non-login interactive shells)
+            appendIfMissing(new File(homeDir, ".bashrc"), sourceLine, "nastech_init.sh");
+
         } catch (IOException ignored) {}
+    }
+
+    private static void appendIfMissing(File file, String content, String marker) throws IOException {
+        if (file.exists()) {
+            String existing = new String(readFile(file));
+            if (existing.contains(marker)) return;
+            try (FileOutputStream fos = new FileOutputStream(file, true)) {
+                fos.write(content.getBytes());
+            }
+        } else {
+            try (FileOutputStream fos = new FileOutputStream(file)) {
+                fos.write(content.getBytes());
+            }
+        }
     }
 
     private static void writeSpeakScript(File dir) {
