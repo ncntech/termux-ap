@@ -67,6 +67,19 @@ import androidx.viewpager.widget.ViewPager;
 
 import java.util.Arrays;
 
+// NasTech AI Terminal System imports
+import android.os.Handler;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.widget.LinearLayout;
+import android.widget.TextClock;
+import androidx.biometric.BiometricManager;
+import androidx.biometric.BiometricPrompt;
+import androidx.core.content.ContextCompat;
+import com.termux.app.nastech.NasTechManager;
+import com.termux.app.nastech.NasTechBrowserActivity;
+import com.termux.app.nastech.NasTechLockActivity;
+
 /**
  * A terminal emulator activity.
  * <p/>
@@ -85,6 +98,13 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
      * {@link #onServiceConnected(ComponentName, IBinder)}.
      */
     TermuxService mTermuxService;
+
+    // NasTech AI Terminal fields
+    private Handler mNasTechAutoHideHandler;
+    private Runnable mNasTechAutoHideRunnable;
+    private boolean mNasTechHeaderVisible = true;
+    private boolean mNasTechFullScreen = false;
+    private static final int NASTECH_AUTO_HIDE_DELAY_MS = 3500;
 
     /**
      * The {@link TerminalView} shown in  {@link TermuxActivity} that displays the terminal.
@@ -254,6 +274,9 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         registerForContextMenu(mTerminalView);
 
         FileReceiverActivity.updateFileReceiverActivityComponentsState(this);
+
+        // NasTech AI Terminal — initialize UI and features
+        initNasTechUI();
 
         try {
             // Start the {@link TermuxService} and make it run regardless of who is bound to it
@@ -1008,6 +1031,144 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         Intent intent = new Intent(context, TermuxActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         return intent;
+    }
+
+    // ─── NasTech AI Terminal System ──────────────────────────────────────────
+
+    private void initNasTechUI() {
+        // Full-screen immersive mode
+        getWindow().setFlags(
+            WindowManager.LayoutParams.FLAG_FULLSCREEN,
+            WindowManager.LayoutParams.FLAG_FULLSCREEN
+        );
+
+        // Set up auto-hide handler for header bar
+        mNasTechAutoHideHandler = new Handler(getMainLooper());
+        mNasTechAutoHideRunnable = this::hideNasTechHeader;
+
+        // Wire header bar touch: tap anywhere on terminal to show/hide
+        LinearLayout headerBar = findViewById(R.id.nastech_header_bar);
+        if (headerBar != null) {
+            // Schedule first auto-hide
+            scheduleNasTechAutoHide();
+        }
+
+        // Full-screen toggle button
+        View fsBtn = findViewById(R.id.nastech_fullscreen_btn);
+        if (fsBtn != null) {
+            fsBtn.setOnClickListener(v -> toggleNasTechFullScreen());
+        }
+
+        // AI header button → run NasTech AI in terminal
+        View aiBtn = findViewById(R.id.nastech_ai_header_btn);
+        if (aiBtn != null) {
+            aiBtn.setOnClickListener(v -> {
+                runNasTechCommand("$ ai");
+                getDrawer().closeDrawers();
+            });
+        }
+
+        // Sidebar quick action buttons
+        View quickAi = findViewById(R.id.nastech_quick_ai);
+        if (quickAi != null) quickAi.setOnClickListener(v -> {
+            runNasTechCommand("$ ai");
+            getDrawer().closeDrawers();
+        });
+
+        View quickUbuntu = findViewById(R.id.nastech_quick_ubuntu);
+        if (quickUbuntu != null) quickUbuntu.setOnClickListener(v -> {
+            runNasTechCommand("$ ubuntu");
+            getDrawer().closeDrawers();
+        });
+
+        View quickBrowser = findViewById(R.id.nastech_quick_browser);
+        if (quickBrowser != null) quickBrowser.setOnClickListener(v -> {
+            Intent intent = new Intent(this, NasTechBrowserActivity.class);
+            startActivity(intent);
+            getDrawer().closeDrawers();
+        });
+
+        View quickSystem = findViewById(R.id.nastech_quick_system);
+        if (quickSystem != null) quickSystem.setOnClickListener(v -> {
+            runNasTechCommand("$ system");
+            getDrawer().closeDrawers();
+        });
+
+        // Check biometric lock on startup
+        checkNasTechBiometricLock();
+    }
+
+    private void runNasTechCommand(String command) {
+        TerminalSession session = getCurrentSession();
+        if (session != null && session.isRunning()) {
+            session.write(command + "\n");
+        }
+    }
+
+    private void showNasTechHeader() {
+        LinearLayout header = findViewById(R.id.nastech_header_bar);
+        if (header == null || mNasTechFullScreen) return;
+        if (mNasTechHeaderVisible) { scheduleNasTechAutoHide(); return; }
+        mNasTechHeaderVisible = true;
+        header.setVisibility(View.VISIBLE);
+        AlphaAnimation fadeIn = new AlphaAnimation(0f, 1f);
+        fadeIn.setDuration(200);
+        header.startAnimation(fadeIn);
+        scheduleNasTechAutoHide();
+    }
+
+    private void hideNasTechHeader() {
+        LinearLayout header = findViewById(R.id.nastech_header_bar);
+        if (header == null || !mNasTechHeaderVisible) return;
+        mNasTechHeaderVisible = false;
+        AlphaAnimation fadeOut = new AlphaAnimation(1f, 0f);
+        fadeOut.setDuration(300);
+        fadeOut.setAnimationListener(new Animation.AnimationListener() {
+            public void onAnimationStart(Animation a) {}
+            public void onAnimationRepeat(Animation a) {}
+            public void onAnimationEnd(Animation a) { header.setVisibility(View.GONE); }
+        });
+        header.startAnimation(fadeOut);
+    }
+
+    private void scheduleNasTechAutoHide() {
+        mNasTechAutoHideHandler.removeCallbacks(mNasTechAutoHideRunnable);
+        mNasTechAutoHideHandler.postDelayed(mNasTechAutoHideRunnable, NASTECH_AUTO_HIDE_DELAY_MS);
+    }
+
+    private void toggleNasTechFullScreen() {
+        mNasTechFullScreen = !mNasTechFullScreen;
+        LinearLayout header = findViewById(R.id.nastech_header_bar);
+        if (mNasTechFullScreen) {
+            if (header != null) header.setVisibility(View.GONE);
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        } else {
+            if (header != null) header.setVisibility(View.VISIBLE);
+            mNasTechHeaderVisible = true;
+            scheduleNasTechAutoHide();
+        }
+    }
+
+    private void checkNasTechBiometricLock() {
+        boolean lockEnabled = getSharedPreferences("nastech_prefs", MODE_PRIVATE)
+            .getBoolean("biometric_lock", false);
+        if (!lockEnabled) return;
+
+        BiometricManager bm = BiometricManager.from(this);
+        int canAuth = bm.canAuthenticate(
+            BiometricManager.Authenticators.BIOMETRIC_STRONG |
+            BiometricManager.Authenticators.DEVICE_CREDENTIAL
+        );
+        if (canAuth == BiometricManager.BIOMETRIC_SUCCESS) {
+            Intent lockIntent = new Intent(this, NasTechLockActivity.class);
+            lockIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(lockIntent);
+        }
+    }
+
+    // Called by TerminalView on touch to reveal header
+    public void onNasTechTerminalTouch() {
+        showNasTechHeader();
     }
 
 }
