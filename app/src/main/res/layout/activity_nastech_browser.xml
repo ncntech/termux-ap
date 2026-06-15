@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/nastech_bg">
+
+    <!-- Browser toolbar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@color/nastech_header_bg"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp">
+
+        <ImageButton
+            android:id="@+id/nastech_browser_back"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@android:drawable/ic_media_rew"
+            android:background="@null"
+            android:contentDescription="Back"
+            app:tint="@color/nastech_text_dim" />
+
+        <ImageButton
+            android:id="@+id/nastech_browser_forward"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@android:drawable/ic_media_ff"
+            android:background="@null"
+            android:contentDescription="Forward"
+            app:tint="@color/nastech_text_dim" />
+
+        <EditText
+            android:id="@+id/nastech_browser_address"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:background="@color/nastech_button_bg"
+            android:textColor="@color/nastech_text"
+            android:textSize="13sp"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:singleLine="true"
+            android:imeOptions="actionGo"
+            android:inputType="textUri"
+            android:hint="Search or enter URL"
+            android:textColorHint="@color/nastech_text_dim" />
+
+        <ImageButton
+            android:id="@+id/nastech_browser_refresh"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@android:drawable/ic_menu_rotate"
+            android:background="@null"
+            android:contentDescription="Refresh"
+            app:tint="@color/nastech_text_dim" />
+
+        <ImageButton
+            android:id="@+id/nastech_browser_close"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:background="@null"
+            android:contentDescription="Close"
+            app:tint="@color/nastech_accent" />
+
+    </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/nastech_browser_progress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="3dp"
+        android:visibility="gone"
+        android:progressTint="@color/nastech_accent"
+        android:max="100" />
+
+    <WebView
+        android:id="@+id/nastech_browser_webview"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+</LinearLayout>
