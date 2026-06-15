@@ -1,3 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- NasTech AI Terminal — Dark color system -->
+    <color name="nastech_bg">#0A0A0F</color>
+    <color name="nastech_bg_surface">#10101A</color>
+    <color name="nastech_header_bg">#0D0D16</color>
+    <color name="nastech_sidebar_bg">#0F0F1A</color>
+    <color name="nastech_sidebar_header">#13131F</color>
+    <color name="nastech_accent">#00C8FF</color>
+    <color name="nastech_accent_dim">#0088BB</color>
+    <color name="nastech_text">#E8E8F0</color>
+    <color name="nastech_text_dim">#7A7A9A</color>
+    <color name="nastech_success">#00FF88</color>
+    <color name="nastech_warning">#FFB800</color>
+    <color name="nastech_error">#FF4444</color>
+    <color name="nastech_wave_start">#001A2E</color>
+    <color name="nastech_wave_end">#003355</color>
+    <color name="nastech_lock_bg">#080810</color>
+    <color name="nastech_button_bg">#1A1A2E</color>
+    <color name="nastech_button_pressed">#1F1F3A</color>
+    <color name="nastech_divider">#1E1E30</color>
+    <color name="nastech_quick_btn_bg">#141428</color>
+    <color name="nastech_quick_btn_text">#00C8FF</color>
 </resources>
