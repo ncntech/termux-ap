@@ -89,7 +89,7 @@ jobs:
           fi
 
       - name: Upload universal APK artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.APK_BASENAME_PREFIX }}_universal
           path: |
@@ -97,7 +97,7 @@ jobs:
             ${{ env.APK_DIR_PATH }}/output-metadata.json
 
       - name: Upload arm64-v8a APK artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.APK_BASENAME_PREFIX }}_arm64-v8a
           path: |
@@ -105,7 +105,7 @@ jobs:
             ${{ env.APK_DIR_PATH }}/output-metadata.json
 
       - name: Upload armeabi-v7a APK artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.APK_BASENAME_PREFIX }}_armeabi-v7a
           path: |
@@ -113,7 +113,7 @@ jobs:
             ${{ env.APK_DIR_PATH }}/output-metadata.json
 
       - name: Upload x86_64 APK artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.APK_BASENAME_PREFIX }}_x86_64
           path: |
@@ -121,7 +121,7 @@ jobs:
             ${{ env.APK_DIR_PATH }}/output-metadata.json
 
       - name: Upload x86 APK artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.APK_BASENAME_PREFIX }}_x86
           path: |
@@ -129,7 +129,7 @@ jobs:
             ${{ env.APK_DIR_PATH }}/output-metadata.json
 
       - name: Upload sha256sums artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.APK_BASENAME_PREFIX }}_sha256sums
           path: |
